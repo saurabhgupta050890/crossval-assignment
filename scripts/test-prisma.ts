@@ -23,6 +23,7 @@ async function main() {
   // 2. Create a document with 1:1 relation to user and nested items
   const document = await prisma.document.create({
     data: {
+      title: "Test Document",
       customerName: "Acme Corp",
       status: "DRAFT",
       userId: user.id,
@@ -32,7 +33,7 @@ async function main() {
             description: "Consulting Services",
             quantity: 10,
             unitPrice: 150.0,
-            discount: 50.0,
+            discount: "50.0",
             tax: 15.0,
           },
           {
@@ -54,7 +55,7 @@ async function main() {
   const fetchedUser = await prisma.user.findUnique({
     where: { id: user.id },
     include: {
-      document: {
+      documents: {
         include: {
           items: true,
         },

@@ -2,10 +2,10 @@ import "server-only";
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, SessionPayload } from "@/lib/session";
 
-type AuthenticatedHandler<TParams = undefined> = (
+type AuthenticatedHandler<TParams = any> = (
   req: NextRequest,
   session: SessionPayload,
-  context: TParams extends undefined ? never : { params: Promise<TParams> }
+  context: any
 ) => Promise<NextResponse> | NextResponse;
 
 /**
@@ -19,12 +19,12 @@ type AuthenticatedHandler<TParams = undefined> = (
  * Usage (with route params):
  *   export const GET = withAuth<{ id: string }>(async (req, session, { params }) => { … });
  */
-export function withAuth<TParams = undefined>(
+export function withAuth<TParams = any>(
   handler: AuthenticatedHandler<TParams>
 ) {
   return async (
     req: NextRequest,
-    context?: { params: Promise<TParams> }
+    context: any
   ): Promise<NextResponse> => {
     const session = await getSession();
 
