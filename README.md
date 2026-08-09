@@ -14,12 +14,32 @@
 - TypeScript
 - TailwindCSS
 - ShadCN UI
-- Prisma + SQLite (Database)
+- Prisma Postgres (Vercel Marketplace)
 - Decimal.js
 
 ## How to run on local
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+### 1. Database Setup
+
+This project uses PostgreSQL as the database. You can easily spin up a local instance using Docker:
+
+```bash
+docker-compose up -d
+```
+
+Copy the example environment variables:
+```bash
+cp .env.example .env
+```
+
+Apply the database schema:
+```bash
+npx prisma migrate dev --name init
+```
+
+### 2. Install dependencies
 
 First, install the dependencies:
 
@@ -89,5 +109,5 @@ Once a document is marked as `FINALIZED` (status update via the API), it becomes
 
 ## Assumptions and Tradeoffs
 - **Derived Data is Not Persisted**: We do not store computed values (subtotals, tax amounts, final totals) in the database. Instead, these are dynamically recalculated on the fly during API GET requests. This prevents data anomalies and simplifies the database schema, at the tradeoff of slightly more compute overhead on reads.
-- **Database Precision**: Because SQLite does not have a native `Decimal` data type, monetary inputs are stored as `Float`. To mitigate precision loss, all critical financial calculations are lifted out of the database layer and handled strictly in the application layer using `decimal.js`.
+- **Monetary Precision**: All critical financial calculations are handled strictly in the application layer using `decimal.js` to prevent precision loss and floating-point errors.
 - **Currency Agnostic**: The application assumes a standard 2-decimal currency system for all calculations. It does not assume a specific currency and does not display one. 

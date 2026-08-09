@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider  = "postgresql"
+  url       = env("STORAGR_DATABASE_URL")
 }
 
 enum DocumentStatus {
