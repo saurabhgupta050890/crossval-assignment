@@ -1,21 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { withAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ItemSchema } from "@/lib/validations";
 import { DocumentStatus } from "@prisma/client";
 
-type RouteContext = { params: Promise<{ id: string }> };
+type RouteParams = { id: string };
 
 async function getOwnedDocument(id: string, userId: string) {
   return prisma.document.findFirst({ where: { id, userId } });
 }
 
-export async function GET(_req: NextRequest, { params }: RouteContext) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withAuth<RouteParams>(async (_req, session, { params }) => {
   const { id } = await params;
   const document = await getOwnedDocument(id, session.userId);
   if (!document) {
@@ -28,14 +23,9 @@ export async function GET(_req: NextRequest, { params }: RouteContext) {
   });
 
   return NextResponse.json(items);
-}
+});
 
-export async function POST(req: NextRequest, { params }: RouteContext) {
-  const session = await getSession();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withAuth<RouteParams>(async (req, session, { params }) => {
   const { id } = await params;
   const document = await getOwnedDocument(id, session.userId);
   if (!document) {
@@ -73,4 +63,5 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   });
 
   return NextResponse.json(item, { status: 201 });
-}
+});
+

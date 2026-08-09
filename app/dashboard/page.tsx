@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Separator } from "@/components/ui/separator";
@@ -8,6 +9,7 @@ import { ModeToggle } from "@/components/mode-toggle";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DocumentsTable } from "@/components/documents/DocumentsTable";
+import { GenerateReportButton } from "@/components/documents/GenerateReportButton";
 
 export const metadata = {
   title: "Dashboard — CrossVal Multirate",
@@ -20,16 +22,19 @@ export default async function DashboardPage() {
     redirect("/");
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.userId },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      email: true,
-      createdAt: true,
-    },
-  });
+  const [user, totalDocuments] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.userId },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        createdAt: true,
+      },
+    }),
+    prisma.document.count({ where: { userId: session.userId } }),
+  ]);
 
   if (!user) {
     redirect("/");
@@ -60,9 +65,14 @@ export default async function DashboardPage() {
             Welcome, {user.firstName}! 👋
           </h1>
 
-          <Button>
-            <Plus size={14} /> Add Document
-          </Button>
+          <div className="flex items-center gap-2">
+            <GenerateReportButton totalDocuments={totalDocuments} />
+            <Link href="/document/create">
+              <Button>
+                <Plus size={16} className="mr-2" /> Add Document
+              </Button>
+            </Link>
+          </div>
         </div>
 
         <Separator />

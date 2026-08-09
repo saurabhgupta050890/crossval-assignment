@@ -1,17 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/session";
+import { NextResponse } from "next/server";
+import { withAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { CreateDocumentSchema } from "@/lib/validations";
 import { DocumentStatus } from "@prisma/client";
-import { processItem } from "@/lib/calculations";
 
-export async function GET(req: NextRequest) {
-  const session = await getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const GET = withAuth(async (req, session) => {
   const { searchParams } = req.nextUrl;
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10));
   const limit = Math.min(
@@ -51,21 +44,16 @@ export async function GET(req: NextRequest) {
       pageCount: Math.ceil(total / limit),
     },
   });
-}
+});
 
-export async function POST(req: NextRequest) {
-  const session = await getSession();
-
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+export const POST = withAuth(async (req, session) => {
   const body = await req.json().catch(() => null);
   if (!body) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
   const parsed = CreateDocumentSchema.safeParse(body);
+  console.log(parsed);
   if (!parsed.success) {
     return NextResponse.json(
       {
@@ -117,4 +105,5 @@ export async function POST(req: NextRequest) {
     },
     { status: 201 },
   );
-}
+});
+

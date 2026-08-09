@@ -1,7 +1,8 @@
 "use client";
 
-import useSWR from "swr";
+import useSWR, { mutate } from "swr";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { DocumentStatus } from "@prisma/client";
 import { StatusBadge } from "./StatusBadge";
 import {
@@ -14,16 +15,17 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import {
-  Trash2,
-  Pencil,
-  CheckCheck,
   FileText,
   Loader2,
   AlertCircle,
   ChevronLeft,
   ChevronRight,
+  Pencil,
+  Trash2,
+  Send,
 } from "lucide-react";
 import { formatDate, truncateId } from "@/lib/utils";
+import Link from "next/link";
 
 interface DocumentRow {
   id: string;
@@ -52,35 +54,6 @@ async function fetcher(url: string): Promise<DocumentsResponse> {
 }
 
 const PAGE_SIZES = [5, 10, 20, 50];
-
-function ActionBtn({
-  onClick,
-  title,
-  colorCls,
-  icon,
-  label,
-  disabled,
-}: {
-  onClick?: () => void;
-  title: string;
-  colorCls: string;
-  icon: React.ReactNode;
-  label: string;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold tracking-widest uppercase transition-colors cursor-pointer rounded-none border border-transparent ${colorCls}`}
-    >
-      {icon}
-      {label}
-    </button>
-  );
-}
 
 function Pagination({
   meta,
@@ -125,46 +98,146 @@ function Pagination({
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
-          size="icon-sm"
+          size="icon"
           disabled={page <= 1}
           onClick={() => onPageChange(page - 1)}
           aria-label="Previous page"
         >
-          <ChevronLeft className="size-3.5" />
+          <ChevronLeft />
         </Button>
         <span className="px-2 font-semibold tracking-widest">
           {page} / {pageCount || 1}
         </span>
         <Button
           variant="outline"
-          size="icon-sm"
+          size="icon"
           disabled={page >= pageCount}
           onClick={() => onPageChange(page + 1)}
           aria-label="Next page"
         >
-          <ChevronRight className="size-3.5" />
+          <ChevronRight />
         </Button>
       </div>
     </div>
   );
 }
 
-interface DocumentsTableProps {
-  onEdit?: (id: string) => void;
-  onDelete?: (id: string) => void;
-  onFinalize?: (id: string) => void;
+/** Stops the row-click navigation from firing when an action button is clicked */
+function stopPropagation(e: React.MouseEvent) {
+  e.stopPropagation();
 }
 
-export function DocumentsTable({
-  onEdit,
-  onDelete,
-  onFinalize,
-}: DocumentsTableProps) {
+function RowActions({ doc, apiKey }: { doc: DocumentRow; apiKey: string }) {
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+
+  const handleDelete = async (e: React.MouseEvent) => {
+    stopPropagation(e);
+    if (!confirm("Are you sure you want to delete this document?")) return;
+
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/documents/${doc.id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        mutate(apiKey);
+      }
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleFinalize = async (e: React.MouseEvent) => {
+    stopPropagation(e);
+    if (
+      !confirm(
+        "Are you sure you want to finalize this document? It cannot be edited afterwards.",
+      )
+    )
+      return;
+
+    setIsFinalizing(true);
+    try {
+      const res = await fetch(`/api/documents/${doc.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isFinal: true }),
+      });
+      if (res.ok) {
+        mutate(apiKey);
+      }
+    } finally {
+      setIsFinalizing(false);
+    }
+  };
+
+  return (
+    <div
+      className="flex items-center justify-end gap-1"
+      onClick={stopPropagation}
+    >
+      {doc.status === DocumentStatus.DRAFT && (
+        <>
+          <Link href={`/document/${doc.id}/edit`} onClick={stopPropagation}>
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={isFinalizing || isDeleting}
+              aria-label="Edit document"
+              className="text-blue-500 hover:text-blue-600 hover:bg-blue-500/10 cursor-pointer"
+              title="Edit"
+            >
+              <Pencil />
+            </Button>
+          </Link>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleFinalize}
+            disabled={isFinalizing || isDeleting}
+            aria-label="Finalize document"
+            className="text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10 cursor-pointer"
+            title="Finalize"
+          >
+            {isFinalizing ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Send className="" />
+            )}
+          </Button>
+        </>
+      )}
+
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={handleDelete}
+        disabled={isFinalizing || isDeleting}
+        aria-label="Delete document"
+        className="text-destructive hover:text-destructive hover:bg-destructive/10 cursor-pointer"
+        title="Delete"
+      >
+        {isDeleting ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Trash2 className="" />
+        )}
+      </Button>
+    </div>
+  );
+}
+
+export function DocumentsTable() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const router = useRouter();
+
+  const apiKey = `/api/documents?page=${page}&limit=${limit}`;
 
   const { data, error, isLoading } = useSWR<DocumentsResponse>(
-    `/api/documents?page=${page}&limit=${limit}`,
+    apiKey,
     fetcher,
     {
       keepPreviousData: true, // don't flash empty while changing pages
@@ -248,7 +321,11 @@ export function DocumentsTable({
                   </TableRow>
                 ) : (
                   documents.map((doc) => (
-                    <TableRow key={doc.id}>
+                    <TableRow
+                      key={doc.id}
+                      onClick={() => router.push(`/document/${doc.id}`)}
+                      className="cursor-pointer"
+                    >
                       <TableCell>
                         <span className="font-mono text-xs text-muted-foreground tracking-wider">
                           {truncateId(doc.id)}
@@ -278,33 +355,7 @@ export function DocumentsTable({
                       </TableCell>
 
                       <TableCell>
-                        <div className="flex items-center justify-end gap-1.5">
-                          {doc.status === DocumentStatus.DRAFT ? (
-                            <>
-                              <ActionBtn
-                                onClick={() => onEdit?.(doc.id)}
-                                title="Edit document"
-                                label="Edit"
-                                icon={<Pencil className="size-3" />}
-                                colorCls="bg-blue-50 text-blue-700 hover:bg-blue-100 dark:bg-blue-950/50 dark:text-blue-400 dark:hover:bg-blue-900/60"
-                              />
-                              <ActionBtn
-                                onClick={() => onFinalize?.(doc.id)}
-                                title="Finalize document"
-                                label="Finalize"
-                                icon={<CheckCheck className="size-3" />}
-                                colorCls="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/50 dark:text-emerald-400 dark:hover:bg-emerald-900/60"
-                              />
-                            </>
-                          ) : null}
-                          <ActionBtn
-                            onClick={() => onDelete?.(doc.id)}
-                            title="Delete document"
-                            label="Delete"
-                            icon={<Trash2 className="size-3" />}
-                            colorCls="bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/50 dark:text-red-400 dark:hover:bg-red-900/60"
-                          />
-                        </div>
+                        <RowActions doc={doc} apiKey={apiKey} />
                       </TableCell>
                     </TableRow>
                   ))

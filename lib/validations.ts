@@ -42,24 +42,18 @@ export const ItemSchema = z.object({
   description: z.string().min(1, "Description is required"),
   quantity: z.number().positive("Quantity must be positive").default(1),
   unitPrice: z.number().nonnegative("Unit price must be non-negative"),
-  discount: z
-    .union([
-      z.number().nonnegative("Discount must be a non-negative number"),
-      z
-        .string()
-        .regex(
-          /^\d+(\.\d+)?%$/,
-          "Discount must be a valid percentage, e.g., '20%'",
-        ),
-    ])
-    .optional()
-    .transform((val) => (val === undefined ? undefined : String(val))),
-  tax: z
-    .number()
-    .max(100, "Tax cannot be greater than 100%")
-    .positive("Tax must be positive")
-    .default(0)
-    .optional(),
+  discount: z.preprocess(
+    (val) =>
+      val === "" || val === null || val === undefined ? undefined : val,
+    z
+      .string()
+      .regex(
+        /^\d+(\.\d+)?%?$/,
+        "Discount must be a non-negative number or percentage, e.g., '20' or '20%'",
+      )
+      .optional(),
+  ),
+  tax: z.number().nonnegative("Tax must be non negative").default(0).optional(),
 });
 
 export const UpdateItemSchema = ItemSchema.partial();

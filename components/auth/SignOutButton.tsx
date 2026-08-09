@@ -23,15 +23,14 @@ export default function SignOutButton() {
   return (
     <Button
       variant="outline"
-      size="sm"
       onClick={handleSignOut}
       disabled={loading}
       id="signout-button"
     >
       {loading ? (
-        <Loader2 size={14} className="animate-spin" />
+        <Loader2 size={16} className="animate-spin" />
       ) : (
-        <LogOut size={14} />
+        <LogOut size={16} />
       )}
       Sign out
     </Button>
