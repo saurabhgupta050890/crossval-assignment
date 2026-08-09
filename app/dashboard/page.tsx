@@ -3,11 +3,11 @@ import { getSession } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import SignOutButton from "../../components/auth/SignOutButton";
 import { ModeToggle } from "@/components/mode-toggle";
-import { User, Mail, Calendar, Shield, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DocumentsTable } from "@/components/documents/DocumentsTable";
 
 export const metadata = {
   title: "Dashboard — CrossVal Multirate",
@@ -22,7 +22,13 @@ export default async function DashboardPage() {
 
   const user = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { id: true, firstName: true, lastName: true, email: true, createdAt: true },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      createdAt: true,
+    },
   });
 
   if (!user) {
@@ -34,7 +40,9 @@ export default async function DashboardPage() {
       <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-foreground">CrossVal Multirate</span>
+            <span className="font-semibold text-foreground">
+              CrossVal Multirate
+            </span>
             <Badge variant="secondary" className="text-xs">
               Documents
             </Badge>
@@ -52,12 +60,14 @@ export default async function DashboardPage() {
             Welcome, {user.firstName}! 👋
           </h1>
 
-          <Button><Plus size={14} /> Add Document</Button>
+          <Button>
+            <Plus size={14} /> Add Document
+          </Button>
         </div>
 
         <Separator />
 
-        
+        <DocumentsTable />
       </main>
     </div>
   );

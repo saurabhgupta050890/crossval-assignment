@@ -20,17 +20,18 @@ model User {
   lastName  String
   email     String    @unique
   password  String
-  document  Document?
+  documents  Document[]
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 }
 
 model Document {
   id           String         @id @default(cuid())
+  title        String
   customerName String
   issueDate    DateTime       @default(now())
   status       DocumentStatus @default(DRAFT)
-  userId       String         @unique
+  userId       String         
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   items        Item[]
   createdAt    DateTime       @default(now())
@@ -42,7 +43,7 @@ model Item {
   description String
   quantity    Float    @default(1)
   unitPrice   Float
-  discount    Float?
+  discount    String?
   tax         Float?
   documentId  String
   document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
