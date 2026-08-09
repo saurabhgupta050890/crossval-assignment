@@ -2,7 +2,6 @@ allowBuilds:
   '@prisma/engines': true
   prisma: true
   '@prisma/client': true
-  better-sqlite3: true
   sharp: false
   unrs-resolver: false
   core-js: true
