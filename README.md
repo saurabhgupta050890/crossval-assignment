@@ -2,7 +2,7 @@
 
 - Name: Multi-Rate Pricing Calculator
 - Assignment: https://drive.google.com/drive/folders/1u_Y5v5hZz1m2QerSQAs5tlEzBatkSyhG
-- Live application: https://multirate.vercel.app/
+- Live application: https://crossval-assignment-c0wynbfuv-saurabhgupta050890s-projects.vercel.app/
 
 ### Prerequisites
 
